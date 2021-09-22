@@ -1,0 +1,37 @@
+name: GitHub Pages
+on:
+  push:
+    branches:
+      - master
+    tags-ignore:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set environment variables
+        run: |
+          cat <<EOF >>$GITHUB_ENV
+          SHORT_SHA=$(git rev-parse --short $GITHUB_SHA)
+          EOF
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository ppa:sstallion/libi2cd
+          sudo apt-get update
+          sudo apt-get install doxygen lcov libcmocka-dev libgpiod-dev libi2cd-dev
+      - name: Copy missing files
+        run: autoreconf --install
+      - name: Configure
+        run: ./configure --enable-coverage --enable-doxygen
+        env:
+          CFLAGS: -g
+          CPPFLAGS: -DNDEBUG
+      - name: Generate code coverage report
+        run: make coverage-html
+      - name: Generate doxygen documentation
+        run: make doxygen
+      - uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: doc/html
+          commit-message: Generate documentation for commit ${{ env.SHORT_SHA }}

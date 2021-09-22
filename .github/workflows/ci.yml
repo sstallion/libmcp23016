@@ -1,0 +1,21 @@
+name: CI
+on:
+  pull_request:
+    branches:
+      - master
+jobs:
+  distcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository ppa:sstallion/libi2cd
+          sudo apt-get update
+          sudo apt-get install libcmocka-dev libgpiod-dev libi2cd-dev
+      - name: Copy missing files
+        run: autoreconf --install
+      - name: Configure
+        run: ./configure
+      - name: Check distribution
+        run: make distcheck

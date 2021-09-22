@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: FSFAP
+# Copyright (C) 2021 Steven Stallion <sstallion@gmail.com>
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved.  This file is offered as-is,
+# without any warranty.
+
+if ENABLE_DOXYGEN
+DOXYGEN_OUTPUTS ?= \
+	$(top_srcdir)/doc/docbook \
+	$(top_srcdir)/doc/html \
+	$(top_srcdir)/doc/latex \
+	$(top_srcdir)/doc/man \
+	$(top_srcdir)/doc/rtf \
+	$(top_srcdir)/doc/xml
+
+.PHONY: doxygen
+doxygen: @DOXYFILE@ $(doxygen_EXAMPLES)
+	@$(DOXYGEN) $(DOXYFLAGS) @DOXYFILE@
+
+.PHONY clean-am: clean-doxygen
+.PHONY: clean-doxygen
+clean-doxygen:
+	-for output in '$(DOXYGEN_OUTPUTS)'; do \
+	  rm -rf $$output; \
+	done
+endif

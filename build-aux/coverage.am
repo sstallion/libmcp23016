@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: FSFAP
+# Copyright (C) 2021 Steven Stallion <sstallion@gmail.com>
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved.  This file is offered as-is,
+# without any warranty.
+
+if ENABLE_COVERAGE
+COVERAGE_DIR ?= $(top_srcdir)
+COVERAGE_TRACEFILE ?= $(top_srcdir)/coverage.info
+COVERAGE_INCLUDE ?= "$(abs_top_srcdir)/*"
+COVERAGE_HTMLDIR ?= $(top_srcdir)/doc/html/coverage
+COVERAGE_HTMLFLAGS ?= --title "@PACKAGE_STRING@"
+
+.PHONY: coverage-reset
+coverage-reset:
+	@$(LCOV) --zerocounters \
+		 --directory $(COVERAGE_DIR) \
+		 --quiet
+
+.PHONY: coverage-capture
+coverage-capture:
+	@$(LCOV) --capture \
+		 --directory $(COVERAGE_DIR) \
+		 --output-file $(COVERAGE_TRACEFILE) \
+		 --gcov-tool $(GCOV) \
+		 --include $(COVERAGE_INCLUDE)
+
+.PHONY: coverage
+coverage: coverage-reset check coverage-capture
+	@$(LCOV) --summary $(COVERAGE_TRACEFILE)
+
+.PHONY: coverage-html
+coverage-html: coverage-reset check coverage-capture
+	@$(GENHTML) --output-directory $(COVERAGE_HTMLDIR) \
+		    $(COVERAGE_HTMLFLAGS) $(COVERAGE_TRACEFILE)
+
+.PHONY clean-am: clean-coverage
+.PHONY: clean-coverage
+clean-coverage:
+	-rm -f $(COVERAGE_TRACEFILE)
+	-rm -rf $(COVERAGE_HTMLDIR)
+	-find $(COVERAGE_DIR) \( -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" \) -delete
+endif

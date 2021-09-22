@@ -1,0 +1,27 @@
+name: Release
+on:
+  push:
+    tags:
+      - v*
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          sudo add-apt-repository ppa:sstallion/libi2cd
+          sudo apt-get update
+          sudo apt-get install gawk libgpiod-dev libi2cd-dev
+      - name: Copy missing files
+        run: autoreconf --install
+      - name: Configure
+        run: ./configure --disable-tests
+      - name: Generate distribution
+        run: make dist
+      - name: Generate release notes
+        run: build-aux/release-notes.sh >${{ github.workspace }}-RELEASE.md
+      - uses: softprops/action-gh-release@v1
+        with:
+          body_path: ${{ github.workspace }}-RELEASE.md
+          files: libmcp23016-*.tar.gz

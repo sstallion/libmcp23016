@@ -16,7 +16,7 @@
 
 AC_PREREQ([2.69])
 
-AC_INIT([libmcp23016], [0.0],
+AC_INIT([libmcp23016], [1.0],
         [https://github.com/sstallion/libmcp23016/issues])
 
 AC_SUBST([PACKAGE_DESCRIPTION], ["Linux userspace driver for Microchip MCP23016 I/O expanders"])

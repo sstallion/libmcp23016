@@ -24,7 +24,7 @@ AC_SUBST([PACKAGE_LIBS], [-lmcp23016])
 
 # Update package version information with care; see
 # <https://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html>.
-AC_SUBST([PACKAGE_VERSION_INFO], [0:0:0])
+AC_SUBST([PACKAGE_VERSION_INFO], [0:1:0])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIRS([m4])

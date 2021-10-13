@@ -37,7 +37,7 @@ struct gpiod_line {
 	int dummy;
 };
 
-struct gpiod_chip *mock_gpiod_chip_open_by_number(unsigned int num);
+struct gpiod_chip *mock_gpiod_chip_open(const char *path);
 void mock_gpiod_chip_close(struct gpiod_chip *chip);
 struct gpiod_line *mock_gpiod_chip_get_line(struct gpiod_chip *chip, unsigned int offset);
 void mock_gpiod_line_release(struct gpiod_line *line);
@@ -49,7 +49,7 @@ struct i2cd {
 	int dummy;
 };
 
-struct i2cd *mock_i2cd_open_by_number(unsigned int num);
+struct i2cd *mock_i2cd_open(const char *path);
 void mock_i2cd_close(struct i2cd *dev);
 int mock_i2cd_write(struct i2cd *dev, uint16_t addr, const void *buf, size_t len);
 int mock_i2cd_write_read(struct i2cd *dev, uint16_t addr,

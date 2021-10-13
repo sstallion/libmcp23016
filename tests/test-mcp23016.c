@@ -33,13 +33,13 @@ int setup(void **state)
 {
 	hook(calloc, mock_calloc);
 	hook(free, mock_free);
-	hook(gpiod_chip_open_by_number, mock_gpiod_chip_open_by_number);
+	hook(gpiod_chip_open, mock_gpiod_chip_open);
 	hook(gpiod_chip_close, mock_gpiod_chip_close);
 	hook(gpiod_chip_get_line, mock_gpiod_chip_get_line);
 	hook(gpiod_line_release, mock_gpiod_line_release);
 	hook(gpiod_line_request_input_flags, mock_gpiod_line_request_input_flags);
 	hook(gpiod_line_get_value, mock_gpiod_line_get_value);
-	hook(i2cd_open_by_number, mock_i2cd_open_by_number);
+	hook(i2cd_open, mock_i2cd_open);
 	hook(i2cd_close, mock_i2cd_close);
 	hook(i2cd_write, mock_i2cd_write);
 	hook(i2cd_write_read, mock_i2cd_write_read);
@@ -50,13 +50,13 @@ int teardown(void **state)
 {
 	unhook(calloc);
 	unhook(free);
-	unhook(gpiod_chip_open_by_number);
+	unhook(gpiod_chip_open);
 	unhook(gpiod_chip_close);
 	unhook(gpiod_chip_get_line);
 	unhook(gpiod_line_release);
 	unhook(gpiod_line_request_input_flags);
 	unhook(gpiod_line_get_value);
-	unhook(i2cd_open_by_number);
+	unhook(i2cd_open);
 	unhook(i2cd_close);
 	unhook(i2cd_write);
 	unhook(i2cd_write_read);
@@ -65,64 +65,43 @@ int teardown(void **state)
 
 void test_mcp23016_open(void **state)
 {
-	struct mcp23016_config mock_config = {0};
-	struct mcp23016 mock_dev = {0};
+	struct mcp23016_device mock_dev = {0};
 	struct i2cd mock_i2cd;
-	struct gpiod_chip mock_gpiod_chip;
-	struct gpiod_line mock_gpiod_line;
-	struct mcp23016 *dev;
+	struct mcp23016_device *dev;
 
 	expect_value(mock_calloc, nmemb, 1);
 	expect_value(mock_calloc, size, sizeof(mock_dev));
 	will_return(mock_calloc, &mock_dev);
 
-	expect_value(mock_i2cd_open_by_number, num, mock_config.i2c_num);
-	will_return(mock_i2cd_open_by_number, &mock_i2cd);
-
-	expect_value(mock_gpiod_chip_open_by_number, num, mock_config.gpio_num);
-	will_return(mock_gpiod_chip_open_by_number, &mock_gpiod_chip);
-
-	expect_value(mock_gpiod_chip_get_line, chip, &mock_gpiod_chip);
-	expect_value(mock_gpiod_chip_get_line, offset, mock_config.gpio_offset);
-	will_return(mock_gpiod_chip_get_line, &mock_gpiod_line);
-
-	expect_value(mock_gpiod_line_request_input_flags, line, &mock_gpiod_line);
-	expect_string(mock_gpiod_line_request_input_flags, consumer, CONSUMER);
-	expect_value(mock_gpiod_line_request_input_flags, flags, GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW);
-	will_return(mock_gpiod_line_request_input_flags, 0);
+	expect_string(mock_i2cd_open, path, "/dev/i2c-0");
+	will_return(mock_i2cd_open, &mock_i2cd);
 
 	/* Check behavior when function succeeds */
-	dev = mcp23016_open(&mock_config);
+	dev = mcp23016_open("/dev/i2c-0", 0);
 
 	assert_non_null(dev);
 	assert_int_equal(dev->i2c_addr, BASE_ADDR);
 	assert_ptr_equal(dev->i2c_dev, &mock_i2cd);
-	assert_ptr_equal(dev->gpio_chip, &mock_gpiod_chip);
-	assert_ptr_equal(dev->gpio_line, &mock_gpiod_line);
 }
 
-void test_mcp23016_open_fail_malloc(void **state)
+void test_mcp23016_open_fail_calloc(void **state)
 {
-	struct mcp23016_config mock_config = {0};
-	struct mcp23016 *dev;
+	struct mcp23016_device *dev;
 
 	expect_any(mock_calloc, nmemb);
 	expect_any(mock_calloc, size);
 	will_return(mock_calloc, NULL);
 
 	/* Check behavior when calloc() fails */
-	dev = mcp23016_open(&mock_config);
+	dev = mcp23016_open("/dev/i2c-0", 0);
 
 	assert_null(dev);
 }
 
 void test_mcp23016_open_fail_i2c_addr(void **state)
 {
-	struct mcp23016_config mock_config = {
-		.num = (END_ADDR-BASE_ADDR) + 1
-	};
-	struct mcp23016 mock_dev = {0};
-	struct mcp23016 *dev;
+	struct mcp23016_device mock_dev = {0};
+	struct mcp23016_device *dev;
 
 	expect_any(mock_calloc, nmemb);
 	expect_any(mock_calloc, size);
@@ -131,7 +110,7 @@ void test_mcp23016_open_fail_i2c_addr(void **state)
 	expect_value(mock_free, ptr, &mock_dev);
 
 	/* Check behavior when I2C address invalid */
-	dev = mcp23016_open(&mock_config);
+	dev = mcp23016_open("/dev/i2c-0", (END_ADDR - BASE_ADDR) + 1);
 
 	assert_int_equal(errno, EINVAL);
 	assert_null(dev);
@@ -139,133 +118,31 @@ void test_mcp23016_open_fail_i2c_addr(void **state)
 
 void test_mcp23016_open_fail_i2c_dev(void **state)
 {
-	struct mcp23016_config mock_config = {0};
-	struct mcp23016 mock_dev = {0};
-	struct mcp23016 *dev;
+	struct mcp23016_device mock_dev = {0};
+	struct mcp23016_device *dev;
 
 	expect_any(mock_calloc, nmemb);
 	expect_any(mock_calloc, size);
 	will_return(mock_calloc, &mock_dev);
 
-	expect_any(mock_i2cd_open_by_number, num);
-	will_return(mock_i2cd_open_by_number, NULL);
+	expect_any(mock_i2cd_open, path);
+	will_return(mock_i2cd_open, NULL);
 
 	expect_value(mock_free, ptr, &mock_dev);
 
-	/* Check behavior when i2cd_open_by_number() fails */
-	dev = mcp23016_open(&mock_config);
-
-	assert_null(dev);
-}
-
-void test_mcp23016_open_fail_gpio_chip(void **state)
-{
-	struct mcp23016_config mock_config = {0};
-	struct mcp23016 mock_dev = {0};
-	struct i2cd mock_i2cd;
-	struct mcp23016 *dev;
-
-	expect_any(mock_calloc, nmemb);
-	expect_any(mock_calloc, size);
-	will_return(mock_calloc, &mock_dev);
-
-	expect_any(mock_i2cd_open_by_number, num);
-	will_return(mock_i2cd_open_by_number, &mock_i2cd);
-
-	expect_any(mock_gpiod_chip_open_by_number, num);
-	will_return(mock_gpiod_chip_open_by_number, NULL);
-
-	expect_value(mock_i2cd_close, dev, &mock_i2cd);
-	expect_value(mock_free, ptr, &mock_dev);
-
-	/* Check behavior when gpiod_chip_open_by_number() fails */
-	dev = mcp23016_open(&mock_config);
-
-	assert_null(dev);
-}
-
-void test_mcp23016_open_fail_gpio_line(void **state)
-{
-	struct mcp23016_config mock_config = {0};
-	struct mcp23016 mock_dev = {0};
-	struct i2cd mock_i2cd;
-	struct gpiod_chip mock_gpiod_chip;
-	struct mcp23016 *dev;
-
-	expect_any(mock_calloc, nmemb);
-	expect_any(mock_calloc, size);
-	will_return(mock_calloc, &mock_dev);
-
-	expect_any(mock_i2cd_open_by_number, num);
-	will_return(mock_i2cd_open_by_number, &mock_i2cd);
-
-	expect_any(mock_gpiod_chip_open_by_number, num);
-	will_return(mock_gpiod_chip_open_by_number, &mock_gpiod_chip);
-
-	expect_any(mock_gpiod_chip_get_line, chip);
-	expect_any(mock_gpiod_chip_get_line, offset);
-	will_return(mock_gpiod_chip_get_line, NULL);
-
-	expect_value(mock_gpiod_chip_close, chip, &mock_gpiod_chip);
-	expect_value(mock_i2cd_close, dev, &mock_i2cd);
-	expect_value(mock_free, ptr, &mock_dev);
-
-	/* Check behavior when gpiod_chip_get_line() fails */
-	dev = mcp23016_open(&mock_config);
-
-	assert_null(dev);
-}
-
-void test_mcp23016_open_fail_gpio_line_flags(void **state)
-{
-	struct mcp23016_config mock_config = {0};
-	struct mcp23016 mock_dev = {0};
-	struct i2cd mock_i2cd;
-	struct gpiod_chip mock_gpiod_chip;
-	struct gpiod_line mock_gpiod_line;
-	struct mcp23016 *dev;
-
-	expect_any(mock_calloc, nmemb);
-	expect_any(mock_calloc, size);
-	will_return(mock_calloc, &mock_dev);
-
-	expect_any(mock_i2cd_open_by_number, num);
-	will_return(mock_i2cd_open_by_number, &mock_i2cd);
-
-	expect_any(mock_gpiod_chip_open_by_number, num);
-	will_return(mock_gpiod_chip_open_by_number, &mock_gpiod_chip);
-
-	expect_any(mock_gpiod_chip_get_line, chip);
-	expect_any(mock_gpiod_chip_get_line, offset);
-	will_return(mock_gpiod_chip_get_line, &mock_gpiod_line);
-
-	expect_any(mock_gpiod_line_request_input_flags, line);
-	expect_any(mock_gpiod_line_request_input_flags, consumer);
-	expect_any(mock_gpiod_line_request_input_flags, flags);
-	will_return(mock_gpiod_line_request_input_flags, -1);
-
-	expect_value(mock_gpiod_line_release, line, &mock_gpiod_line);
-	expect_value(mock_gpiod_chip_close, chip, &mock_gpiod_chip);
-	expect_value(mock_i2cd_close, dev, &mock_i2cd);
-	expect_value(mock_free, ptr, &mock_dev);
-
-	/* Check behavior when gpiod_line_request_input_flags() fails */
-	dev = mcp23016_open(&mock_config);
+	/* Check behavior when i2cd_open() fails */
+	dev = mcp23016_open("/dev/i2c-0", 0);
 
 	assert_null(dev);
 }
 
 void test_mcp23016_close(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 
-	expect_value(mock_gpiod_line_release, line, mock_dev.gpio_line);
-	expect_value(mock_gpiod_chip_close, chip, mock_dev.gpio_chip);
 	expect_value(mock_i2cd_close, dev, mock_dev.i2c_dev);
 	expect_value(mock_free, ptr, &mock_dev);
 
@@ -275,11 +152,9 @@ void test_mcp23016_close(void **state)
 
 void test_mcp23016_reset(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_bufs[][3] = {
 		{REG_IODIR0,  0xff, 0xff},
@@ -335,11 +210,9 @@ void test_mcp23016_reset(void **state)
 
 void test_mcp23016_get_port(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_write_buf[] = {REG_GP0};
 	uint8_t mock_read_buf[] = {0x55, 0xaa};
@@ -363,11 +236,9 @@ void test_mcp23016_get_port(void **state)
 
 void test_mcp23016_set_port(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_buf[] = {REG_GP0, 0x55, 0xaa};
 	int rc;
@@ -386,11 +257,9 @@ void test_mcp23016_set_port(void **state)
 
 void test_mcp23016_get_output(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_write_buf[] = {REG_OLAT0};
 	uint8_t mock_read_buf[] = {0x55, 0xaa};
@@ -414,11 +283,9 @@ void test_mcp23016_get_output(void **state)
 
 void test_mcp23016_set_output(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_buf[] = {REG_OLAT0, 0x55, 0xaa};
 	int rc;
@@ -437,11 +304,9 @@ void test_mcp23016_set_output(void **state)
 
 void test_mcp23016_get_polarity(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_write_buf[] = {REG_IPOL0};
 	uint8_t mock_read_buf[] = {0x55, 0xaa};
@@ -465,11 +330,9 @@ void test_mcp23016_get_polarity(void **state)
 
 void test_mcp23016_set_polarity(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_buf[] = {REG_IPOL0, 0x55, 0xaa};
 	int rc;
@@ -488,11 +351,9 @@ void test_mcp23016_set_polarity(void **state)
 
 void test_mcp23016_get_direction(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_write_buf[] = {REG_IODIR0};
 	uint8_t mock_read_buf[] = {0x55, 0xaa};
@@ -516,11 +377,9 @@ void test_mcp23016_get_direction(void **state)
 
 void test_mcp23016_set_direction(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_buf[] = {REG_IODIR0, 0x55, 0xaa};
 	int rc;
@@ -537,32 +396,11 @@ void test_mcp23016_set_direction(void **state)
 	assert_return_code(rc, 0);
 }
 
-void test_mcp23016_has_interrupt(void **state)
-{
-	struct mcp23016 mock_dev = {
-		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
-	};
-	int res;
-
-	expect_value(mock_gpiod_line_get_value, line, mock_dev.gpio_line);
-	will_return(mock_gpiod_line_get_value, 0);
-
-	/* Check behavior when function succeeds */
-	res = mcp23016_has_interrupt(&mock_dev);
-
-	assert_int_equal(res, 0);
-}
-
 void test_mcp23016_get_interrupt(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_write_buf[] = {REG_INTCAP0};
 	uint8_t mock_read_buf[] = {0x55, 0xaa};
@@ -586,11 +424,9 @@ void test_mcp23016_get_interrupt(void **state)
 
 void test_mcp23016_get_control(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_write_buf[] = {REG_IOCON0};
 	uint8_t mock_read_buf[] = {0x55, 0xaa};
@@ -614,11 +450,9 @@ void test_mcp23016_get_control(void **state)
 
 void test_mcp23016_set_control(void **state)
 {
-	struct mcp23016 mock_dev = {
+	struct mcp23016_device mock_dev = {
 		.i2c_addr = BASE_ADDR,
-		.i2c_dev = &(struct i2cd){0},
-		.gpio_chip = &(struct gpiod_chip){0},
-		.gpio_line = &(struct gpiod_line){0}
+		.i2c_dev = &(struct i2cd){0}
 	};
 	uint8_t mock_buf[] = {REG_IOCON0, 0x55, 0xaa};
 	int rc;
@@ -635,16 +469,169 @@ void test_mcp23016_set_control(void **state)
 	assert_return_code(rc, 0);
 }
 
+void test_mcp23016_interrupt_open(void **state)
+{
+	struct mcp23016_interrupt mock_intr = {0};
+	struct gpiod_chip mock_gpiod_chip;
+	struct gpiod_line mock_gpiod_line;
+	struct mcp23016_interrupt *intr;
+
+	expect_value(mock_calloc, nmemb, 1);
+	expect_value(mock_calloc, size, sizeof(mock_intr));
+	will_return(mock_calloc, &mock_intr);
+
+	expect_string(mock_gpiod_chip_open, path, "/dev/gpiochip0");
+	will_return(mock_gpiod_chip_open, &mock_gpiod_chip);
+
+	expect_value(mock_gpiod_chip_get_line, chip, &mock_gpiod_chip);
+	expect_value(mock_gpiod_chip_get_line, offset, 0);
+	will_return(mock_gpiod_chip_get_line, &mock_gpiod_line);
+
+	expect_value(mock_gpiod_line_request_input_flags, line, &mock_gpiod_line);
+	expect_string(mock_gpiod_line_request_input_flags, consumer, CONSUMER);
+	expect_value(mock_gpiod_line_request_input_flags, flags, GPIOD_LINE_REQUEST_FLAG_ACTIVE_LOW);
+	will_return(mock_gpiod_line_request_input_flags, 0);
+
+	/* Check behavior when function succeeds */
+	intr = mcp23016_interrupt_open("/dev/gpiochip0", 0);
+
+	assert_non_null(intr);
+	assert_ptr_equal(intr->gpio_chip, &mock_gpiod_chip);
+	assert_ptr_equal(intr->gpio_line, &mock_gpiod_line);
+}
+
+void test_mcp23016_interrupt_open_fail_calloc(void **state)
+{
+	struct mcp23016_interrupt *intr;
+
+	expect_any(mock_calloc, nmemb);
+	expect_any(mock_calloc, size);
+	will_return(mock_calloc, NULL);
+
+	/* Check behavior when calloc() fails */
+	intr = mcp23016_interrupt_open("/dev/gpiochip0", 0);
+
+	assert_null(intr);
+}
+
+void test_mcp23016_interrupt_open_fail_gpio_chip(void **state)
+{
+	struct mcp23016_interrupt mock_intr = {0};
+	struct mcp23016_interrupt *intr;
+
+	expect_any(mock_calloc, nmemb);
+	expect_any(mock_calloc, size);
+	will_return(mock_calloc, &mock_intr);
+
+	expect_any(mock_gpiod_chip_open, path);
+	will_return(mock_gpiod_chip_open, NULL);
+
+	expect_value(mock_free, ptr, &mock_intr);
+
+	/* Check behavior when gpiod_chip_open() fails */
+	intr = mcp23016_interrupt_open("/dev/gpiochip0", 0);
+
+	assert_null(intr);
+}
+
+void test_mcp23016_interrupt_open_fail_gpio_line(void **state)
+{
+	struct mcp23016_interrupt mock_intr = {0};
+	struct gpiod_chip mock_gpiod_chip;
+	struct mcp23016_interrupt *intr;
+
+	expect_any(mock_calloc, nmemb);
+	expect_any(mock_calloc, size);
+	will_return(mock_calloc, &mock_intr);
+
+	expect_any(mock_gpiod_chip_open, path);
+	will_return(mock_gpiod_chip_open, &mock_gpiod_chip);
+
+	expect_any(mock_gpiod_chip_get_line, chip);
+	expect_any(mock_gpiod_chip_get_line, offset);
+	will_return(mock_gpiod_chip_get_line, NULL);
+
+	expect_value(mock_gpiod_chip_close, chip, &mock_gpiod_chip);
+	expect_value(mock_free, ptr, &mock_intr);
+
+	/* Check behavior when gpiod_chip_get_line() fails */
+	intr = mcp23016_interrupt_open("/dev/gpiochip0", 0);
+
+	assert_null(intr);
+}
+
+void test_mcp23016_interrupt_open_fail_gpio_line_flags(void **state)
+{
+	struct mcp23016_interrupt mock_intr = {0};
+	struct gpiod_chip mock_gpiod_chip;
+	struct gpiod_line mock_gpiod_line;
+	struct mcp23016_interrupt *intr;
+
+	expect_any(mock_calloc, nmemb);
+	expect_any(mock_calloc, size);
+	will_return(mock_calloc, &mock_intr);
+
+	expect_any(mock_gpiod_chip_open, path);
+	will_return(mock_gpiod_chip_open, &mock_gpiod_chip);
+
+	expect_any(mock_gpiod_chip_get_line, chip);
+	expect_any(mock_gpiod_chip_get_line, offset);
+	will_return(mock_gpiod_chip_get_line, &mock_gpiod_line);
+
+	expect_any(mock_gpiod_line_request_input_flags, line);
+	expect_any(mock_gpiod_line_request_input_flags, consumer);
+	expect_any(mock_gpiod_line_request_input_flags, flags);
+	will_return(mock_gpiod_line_request_input_flags, -1);
+
+	expect_value(mock_gpiod_line_release, line, &mock_gpiod_line);
+	expect_value(mock_gpiod_chip_close, chip, &mock_gpiod_chip);
+	expect_value(mock_free, ptr, &mock_intr);
+
+	/* Check behavior when gpiod_line_request_input_flags() fails */
+	intr = mcp23016_interrupt_open("/dev/gpiochip0", 0);
+
+	assert_null(intr);
+}
+
+void test_mcp23016_interrupt_close(void **state)
+{
+	struct mcp23016_interrupt mock_intr = {
+		.gpio_chip = &(struct gpiod_chip){0},
+		.gpio_line = &(struct gpiod_line){0}
+	};
+
+	expect_value(mock_gpiod_line_release, line, mock_intr.gpio_line);
+	expect_value(mock_gpiod_chip_close, chip, mock_intr.gpio_chip);
+	expect_value(mock_free, ptr, &mock_intr);
+
+	/* Check behavior when function succeeds */
+	mcp23016_interrupt_close(&mock_intr);
+}
+
+void test_mcp23016_has_interrupt(void **state)
+{
+	struct mcp23016_interrupt mock_intr = {
+		.gpio_chip = &(struct gpiod_chip){0},
+		.gpio_line = &(struct gpiod_line){0}
+	};
+	int res;
+
+	expect_value(mock_gpiod_line_get_value, line, mock_intr.gpio_line);
+	will_return(mock_gpiod_line_get_value, 0);
+
+	/* Check behavior when function succeeds */
+	res = mcp23016_has_interrupt(&mock_intr);
+
+	assert_int_equal(res, 0);
+}
+
 int main(void)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_mcp23016_open),
-		cmocka_unit_test(test_mcp23016_open_fail_malloc),
+		cmocka_unit_test(test_mcp23016_open_fail_calloc),
 		cmocka_unit_test(test_mcp23016_open_fail_i2c_addr),
 		cmocka_unit_test(test_mcp23016_open_fail_i2c_dev),
-		cmocka_unit_test(test_mcp23016_open_fail_gpio_chip),
-		cmocka_unit_test(test_mcp23016_open_fail_gpio_line),
-		cmocka_unit_test(test_mcp23016_open_fail_gpio_line_flags),
 		cmocka_unit_test(test_mcp23016_close),
 		cmocka_unit_test(test_mcp23016_reset),
 		cmocka_unit_test(test_mcp23016_get_port),
@@ -655,10 +642,16 @@ int main(void)
 		cmocka_unit_test(test_mcp23016_set_polarity),
 		cmocka_unit_test(test_mcp23016_get_direction),
 		cmocka_unit_test(test_mcp23016_set_direction),
-		cmocka_unit_test(test_mcp23016_has_interrupt),
 		cmocka_unit_test(test_mcp23016_get_interrupt),
 		cmocka_unit_test(test_mcp23016_get_control),
-		cmocka_unit_test(test_mcp23016_set_control)
+		cmocka_unit_test(test_mcp23016_set_control),
+		cmocka_unit_test(test_mcp23016_interrupt_open),
+		cmocka_unit_test(test_mcp23016_interrupt_open_fail_calloc),
+		cmocka_unit_test(test_mcp23016_interrupt_open_fail_gpio_chip),
+		cmocka_unit_test(test_mcp23016_interrupt_open_fail_gpio_line),
+		cmocka_unit_test(test_mcp23016_interrupt_open_fail_gpio_line_flags),
+		cmocka_unit_test(test_mcp23016_interrupt_close),
+		cmocka_unit_test(test_mcp23016_has_interrupt)
 	};
 
 	return cmocka_run_group_tests(tests, setup, teardown);

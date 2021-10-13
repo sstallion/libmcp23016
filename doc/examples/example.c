@@ -4,17 +4,11 @@
 
 int main(void)
 {
-	const struct mcp23016_config config = {
-		.num = 0,         /* I2C slave address: 0x20 */
-		.i2c_num = 1,     /* I2C character device: /dev/i2c-1 */
-		.gpio_num = 0,    /* GPIO chip: /dev/gpiochip0 */
-		.gpio_offset = 19 /* GPIO line: GPIO19 */
-	};
-	struct mcp23016 *dev;
+	struct mcp23016_device *dev;
 	uint16_t port;
 
 	/* Open MCP23016 device */
-	dev = mcp23016_open(&config);
+	dev = mcp23016_open("/dev/i2c-1", 0);
 	if (dev == NULL) {
 		perror(NULL);
 		return EXIT_FAILURE;

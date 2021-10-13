@@ -18,7 +18,7 @@ is also available.
 system package manager (eg. `libgpiod-dev` and `libi2cd-dev` on Debian-based
 distributions via `apt-get`).
 
-[cmocka][6] is required for building tests and should also be installed using
+[cmocka][5] is required for building tests and should also be installed using
 the system package manager (eg. `libcmocka-dev` on Debian-based distributions
 via `apt-get`).
 
@@ -51,9 +51,7 @@ License, or any later version. See [COPYING] for more details.
 [2]: https://github.com/sstallion/libi2cd
 [3]: https://sstallion.github.io/libmcp23016/
 [4]: https://sstallion.github.io/libmcp23016/coverage/
-
-
-[6]: https://cmocka.org/
+[5]: https://cmocka.org/
 
 [COPYING]: COPYING
 [HACKING.md]: HACKING.md

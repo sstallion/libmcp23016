@@ -42,14 +42,14 @@ void *__real_calloc(size_t nmemb, size_t size);
 void __real_free(void *ptr);
 
 /* libgpiod */
-extern void *__hook_gpiod_chip_open_by_number;
+extern void *__hook_gpiod_chip_open;
 extern void *__hook_gpiod_chip_close;
 extern void *__hook_gpiod_chip_get_line;
 extern void *__hook_gpiod_line_release;
 extern void *__hook_gpiod_line_request_input_flags;
 extern void *__hook_gpiod_line_get_value;
 
-struct gpiod_chip *__real_gpiod_chip_open_by_number(unsigned int num);
+struct gpiod_chip *__real_gpiod_chip_open(const char *path);
 void __real_gpiod_chip_close(struct gpiod_chip *chip);
 struct gpiod_line *__real_gpiod_chip_get_line(struct gpiod_chip *chip, unsigned int offset);
 void __real_gpiod_line_release(struct gpiod_line *line);
@@ -57,12 +57,12 @@ int __real_gpiod_line_request_input_flags(struct gpiod_line *line, const char *c
 int __real_gpiod_line_get_value(struct gpiod_line *line);
 
 /* libi2cd */
-extern void *__hook_i2cd_open_by_number;
+extern void *__hook_i2cd_open;
 extern void *__hook_i2cd_close;
 extern void *__hook_i2cd_write;
 extern void *__hook_i2cd_write_read;
 
-struct i2cd *__real_i2cd_open_by_number(unsigned int num);
+struct i2cd *__real_i2cd_open(const char *path);
 void __real_i2cd_close(struct i2cd *dev);
 int __real_i2cd_write(struct i2cd *dev, uint16_t addr, const void *buf, size_t len);
 int __real_i2cd_write_read(struct i2cd *dev, uint16_t addr,

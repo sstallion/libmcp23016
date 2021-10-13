@@ -57,14 +57,17 @@ extern const char *__progname;
 #define REG_IOCON0	0x0a	/* I/O Expander Control Register 0 */
 #define REG_IOCON1	0x0b	/* I/O Expander Control Register 1 */
 
-struct mcp23016 {
+struct mcp23016_device {
 	uint16_t i2c_addr;		/**< I2C slave address. */
 	struct i2cd *i2c_dev;		/**< Pointer to an I2C character device handle. */
+};
+
+struct mcp23016_interrupt {
 	struct gpiod_chip *gpio_chip;	/**< Pointer to a GPIO chip object. */
 	struct gpiod_line *gpio_line;	/**< Pointer to a GPIO line object. */
 };
 
-int mcp23016_register_read(struct mcp23016 *dev, uint8_t reg, uint16_t *val);
-int mcp23016_register_write(struct mcp23016 *dev, uint8_t reg, uint16_t val);
+int mcp23016_register_read(struct mcp23016_device *dev, uint8_t reg, uint16_t *val);
+int mcp23016_register_write(struct mcp23016_device *dev, uint8_t reg, uint16_t val);
 
 #endif /* MCP23016_PRIVATE_H */

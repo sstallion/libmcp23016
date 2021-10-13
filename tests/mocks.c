@@ -40,9 +40,9 @@ void mock_free(void *ptr)
 	check_expected_ptr(ptr);
 }
 
-struct gpiod_chip *mock_gpiod_chip_open_by_number(unsigned int num)
+struct gpiod_chip *mock_gpiod_chip_open(const char *path)
 {
-	check_expected(num);
+	check_expected(path);
 
 	return mock_type(struct gpiod_chip *);
 }
@@ -81,9 +81,9 @@ int mock_gpiod_line_get_value(struct gpiod_line *line)
 	return mock_type(int);
 }
 
-struct i2cd *mock_i2cd_open_by_number(unsigned int num)
+struct i2cd *mock_i2cd_open(const char *path)
 {
-	check_expected(num);
+	check_expected(path);
 
 	return mock_type(struct i2cd *);
 }

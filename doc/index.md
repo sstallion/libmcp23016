@@ -16,6 +16,8 @@ then passed to supporting functions followed by a call to mcp23016_close() to
 close the handle and free associated memory. As the MCP23016 lacks a hardware
 reset, it is advised that a software reset be issued by calling mcp23016_reset()
 after opening the device handle to ensure the device is in a consistent state.
+Interrupt output is managed separately to support multiple devices. See
+the [Interrupt Output](@ref interrupt) module for more details.
 
 The following example demonstrates getting the port value from a MCP23016 device
 at position 0 (I2C slave address `0x20`):

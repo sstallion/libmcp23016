@@ -70,7 +70,7 @@ $(function() {
 <div class="textblock"><p>libmcp23016 provides a simple and straightforward API for accessing Microchip MCP23016 I/O expanders from userspace. It relies on the <a href="https://git.kernel.org/pub/scm/libs/libgpiod/libgpiod.git/">libgpiod</a> and <a href="https://github.com/sstallion/libi2cd">libi2cd</a> libraries to interface with the Linux kernel.</p>
 <p>libmcp23016 development is hosted on <a href="https://github.com/sstallion/libmcp23016">GitHub</a>. A <a href="https://sstallion.github.io/libmcp23016/coverage/">code coverage report</a> is also available.</p>
 <h1>Getting Started</h1>
-<p>libmcp23016's main data structures and functions are documented in the <a class="el" href="group__main.html">Main API</a> module. Most uses of the API are straightforward: a MCP23016 device handle is first created by calling <a class="el" href="group__main.html#ga6b23c16882b5a008a79da21bcbea8f09" title="Open the MCP23016 device specified by config.">mcp23016_open()</a>, which is then passed to supporting functions followed by a call to <a class="el" href="group__main.html#ga4d5d842e0ee5ee69e84a952a740bfe99" title="Close a MCP23016 device handle and free associated memory.">mcp23016_close()</a> to close the handle and free associated memory. As the MCP23016 lacks a hardware reset, it is advised that a software reset be issued by calling <a class="el" href="group__main.html#ga297ce08f27db7009d030af7a37f73b51" title="Issue a software reset, which resets registers to POR defaults and clears pending interrupts.">mcp23016_reset()</a> after opening the device handle to ensure the device is in a consistent state.</p>
+<p>libmcp23016's main data structures and functions are documented in the <a class="el" href="group__main.html">Main API</a> module. Most uses of the API are straightforward: a MCP23016 device handle is first created by calling <a class="el" href="group__main.html#ga107b6d7ef57a80b3be19b9c1ec5baee0" title="Open the MCP23016 device specified by path and num.">mcp23016_open()</a>, which is then passed to supporting functions followed by a call to <a class="el" href="group__main.html#ga4e698f1cf8c536dd429c75d9e0fdf68f" title="Close a MCP23016 device handle and free associated memory.">mcp23016_close()</a> to close the handle and free associated memory. As the MCP23016 lacks a hardware reset, it is advised that a software reset be issued by calling <a class="el" href="group__main.html#gab6cf36205553868c923550b0a0512ccb" title="Issue a software reset, which resets registers to POR defaults and clears pending interrupts.">mcp23016_reset()</a> after opening the device handle to ensure the device is in a consistent state. Interrupt output is managed separately to support multiple devices. See the <a class="el" href="group__interrupt.html">Interrupt Output</a> module for more details.</p>
 <p>The following example demonstrates getting the port value from a MCP23016 device at position 0 (I2C slave address <code>0x20</code>):</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;stdlib.h&gt;</span></div>
@@ -78,40 +78,34 @@ $(function() {
 <div class="line"> </div>
 <div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">void</span>)</div>
 <div class="line">{</div>
-<div class="line">    <span class="keyword">const</span> <span class="keyword">struct </span><a class="code" href="structmcp23016__config.html">mcp23016_config</a> config = {</div>
-<div class="line">        .<a class="code" href="structmcp23016__config.html#a41f3b20372c6b29131383332778389de">num</a> = 0,         <span class="comment">/* I2C slave address: 0x20 */</span></div>
-<div class="line">        .i2c_num = 1,     <span class="comment">/* I2C character device: /dev/i2c-1 */</span></div>
-<div class="line">        .gpio_num = 0,    <span class="comment">/* GPIO chip: /dev/gpiochip0 */</span></div>
-<div class="line">        .gpio_offset = 19 <span class="comment">/* GPIO line: GPIO19 */</span></div>
-<div class="line">    };</div>
-<div class="line">    <span class="keyword">struct </span><a class="code" href="structmcp23016.html">mcp23016</a> *dev;</div>
+<div class="line">    <span class="keyword">struct </span><a class="code" href="structmcp23016__device.html">mcp23016_device</a> *dev;</div>
 <div class="line">    uint16_t port;</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">/* Open MCP23016 device */</span></div>
-<div class="line">    dev = <a class="code" href="group__main.html#ga6b23c16882b5a008a79da21bcbea8f09">mcp23016_open</a>(&amp;config);</div>
+<div class="line">    dev = <a class="code" href="group__main.html#ga107b6d7ef57a80b3be19b9c1ec5baee0">mcp23016_open</a>(<span class="stringliteral">&quot;/dev/i2c-1&quot;</span>, 0);</div>
 <div class="line">    <span class="keywordflow">if</span> (dev == NULL) {</div>
 <div class="line">        perror(NULL);</div>
 <div class="line">        <span class="keywordflow">return</span> EXIT_FAILURE;</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">/* Reset registers to POR defaults */</span></div>
-<div class="line">    <span class="keywordflow">if</span> (<a class="code" href="group__main.html#ga297ce08f27db7009d030af7a37f73b51">mcp23016_reset</a>(dev) &lt; 0) {</div>
+<div class="line">    <span class="keywordflow">if</span> (<a class="code" href="group__main.html#gab6cf36205553868c923550b0a0512ccb">mcp23016_reset</a>(dev) &lt; 0) {</div>
 <div class="line">        perror(NULL);</div>
-<div class="line">        <a class="code" href="group__main.html#ga4d5d842e0ee5ee69e84a952a740bfe99">mcp23016_close</a>(dev);</div>
+<div class="line">        <a class="code" href="group__main.html#ga4e698f1cf8c536dd429c75d9e0fdf68f">mcp23016_close</a>(dev);</div>
 <div class="line">        <span class="keywordflow">return</span> EXIT_FAILURE;</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">/* Get the port value */</span></div>
-<div class="line">    <span class="keywordflow">if</span> (<a class="code" href="group__main.html#gad8395bad40e626ec0b5fb2ce51b91c23">mcp23016_get_port</a>(dev, &amp;port) &lt; 0) {</div>
+<div class="line">    <span class="keywordflow">if</span> (<a class="code" href="group__main.html#gaa3ee2859f3a72c55da31407c215aa95a">mcp23016_get_port</a>(dev, &amp;port) &lt; 0) {</div>
 <div class="line">        perror(NULL);</div>
-<div class="line">        <a class="code" href="group__main.html#ga4d5d842e0ee5ee69e84a952a740bfe99">mcp23016_close</a>(dev);</div>
+<div class="line">        <a class="code" href="group__main.html#ga4e698f1cf8c536dd429c75d9e0fdf68f">mcp23016_close</a>(dev);</div>
 <div class="line">        <span class="keywordflow">return</span> EXIT_FAILURE;</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    printf(<span class="stringliteral">&quot;port value: %#&quot;</span> PRIx16 <span class="stringliteral">&quot;\n&quot;</span>, port);</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">/* Close MCP23016 device handle */</span></div>
-<div class="line">    <a class="code" href="group__main.html#ga4d5d842e0ee5ee69e84a952a740bfe99">mcp23016_close</a>(dev);</div>
+<div class="line">    <a class="code" href="group__main.html#ga4e698f1cf8c536dd429c75d9e0fdf68f">mcp23016_close</a>(dev);</div>
 <div class="line"> </div>
 <div class="line">    <span class="keywordflow">return</span> EXIT_SUCCESS;</div>
 <div class="line">}</div>
@@ -120,13 +114,11 @@ $(function() {
 <p>libmcp23016 is distributed under the terms of the GNU Lesser General Public License as published by the Free Software Foundation; either version 2.1 of the License, or any later version. See <a href="https://github.com/sstallion/libmcp23016/blob/master/COPYING">COPYING</a> for more details. </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
-<div class="ttc" id="astructmcp23016__config_html_a41f3b20372c6b29131383332778389de"><div class="ttname"><a href="structmcp23016__config.html#a41f3b20372c6b29131383332778389de">mcp23016_config::num</a></div><div class="ttdeci">unsigned int num</div><div class="ttdef"><b>Definition:</b> mcp23016.h:52</div></div>
-<div class="ttc" id="agroup__main_html_ga297ce08f27db7009d030af7a37f73b51"><div class="ttname"><a href="group__main.html#ga297ce08f27db7009d030af7a37f73b51">mcp23016_reset</a></div><div class="ttdeci">int mcp23016_reset(struct mcp23016 *dev)</div><div class="ttdoc">Issue a software reset, which resets registers to POR defaults and clears pending interrupts.</div></div>
-<div class="ttc" id="agroup__main_html_ga6b23c16882b5a008a79da21bcbea8f09"><div class="ttname"><a href="group__main.html#ga6b23c16882b5a008a79da21bcbea8f09">mcp23016_open</a></div><div class="ttdeci">struct mcp23016 * mcp23016_open(const struct mcp23016_config *config)</div><div class="ttdoc">Open the MCP23016 device specified by config.</div></div>
-<div class="ttc" id="agroup__main_html_ga4d5d842e0ee5ee69e84a952a740bfe99"><div class="ttname"><a href="group__main.html#ga4d5d842e0ee5ee69e84a952a740bfe99">mcp23016_close</a></div><div class="ttdeci">void mcp23016_close(struct mcp23016 *dev)</div><div class="ttdoc">Close a MCP23016 device handle and free associated memory.</div></div>
-<div class="ttc" id="astructmcp23016_html"><div class="ttname"><a href="structmcp23016.html">mcp23016</a></div><div class="ttdoc">Handle to a MCP23016 device.</div></div>
-<div class="ttc" id="astructmcp23016__config_html"><div class="ttname"><a href="structmcp23016__config.html">mcp23016_config</a></div><div class="ttdoc">Structure that contains MCP23016 device configuration.</div><div class="ttdef"><b>Definition:</b> mcp23016.h:51</div></div>
-<div class="ttc" id="agroup__main_html_gad8395bad40e626ec0b5fb2ce51b91c23"><div class="ttname"><a href="group__main.html#gad8395bad40e626ec0b5fb2ce51b91c23">mcp23016_get_port</a></div><div class="ttdeci">int mcp23016_get_port(struct mcp23016 *dev, uint16_t *val)</div><div class="ttdoc">Get the port value.</div></div>
+<div class="ttc" id="astructmcp23016__device_html"><div class="ttname"><a href="structmcp23016__device.html">mcp23016_device</a></div><div class="ttdoc">Handle to a MCP23016 device.</div></div>
+<div class="ttc" id="agroup__main_html_gaa3ee2859f3a72c55da31407c215aa95a"><div class="ttname"><a href="group__main.html#gaa3ee2859f3a72c55da31407c215aa95a">mcp23016_get_port</a></div><div class="ttdeci">int mcp23016_get_port(struct mcp23016_device *dev, uint16_t *val)</div><div class="ttdoc">Get the port value.</div></div>
+<div class="ttc" id="agroup__main_html_gab6cf36205553868c923550b0a0512ccb"><div class="ttname"><a href="group__main.html#gab6cf36205553868c923550b0a0512ccb">mcp23016_reset</a></div><div class="ttdeci">int mcp23016_reset(struct mcp23016_device *dev)</div><div class="ttdoc">Issue a software reset, which resets registers to POR defaults and clears pending interrupts.</div></div>
+<div class="ttc" id="agroup__main_html_ga107b6d7ef57a80b3be19b9c1ec5baee0"><div class="ttname"><a href="group__main.html#ga107b6d7ef57a80b3be19b9c1ec5baee0">mcp23016_open</a></div><div class="ttdeci">struct mcp23016_device * mcp23016_open(const char *path, unsigned int num)</div><div class="ttdoc">Open the MCP23016 device specified by path and num.</div></div>
+<div class="ttc" id="agroup__main_html_ga4e698f1cf8c536dd429c75d9e0fdf68f"><div class="ttname"><a href="group__main.html#ga4e698f1cf8c536dd429c75d9e0fdf68f">mcp23016_close</a></div><div class="ttdeci">void mcp23016_close(struct mcp23016_device *dev)</div><div class="ttdoc">Close a MCP23016 device handle and free associated memory.</div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

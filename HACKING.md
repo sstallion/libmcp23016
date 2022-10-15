@@ -24,8 +24,8 @@ Once you are finished making changes, be sure to check the output of `make
 check` and `make distcheck`. At a minimum, there should be no test regressions
 and additional tests should be added for new functionality.
 
-With that out of the way, you may now commit your changes and create a [pull
-request][3] against the `master` branch for review!
+Finally, commit your changes and create a [pull request][3] against the `master`
+branch for review.
 
 ## Making New Releases
 
